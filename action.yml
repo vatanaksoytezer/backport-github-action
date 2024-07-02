@@ -14,6 +14,10 @@ inputs:
     description: Boolean, if set to true the reviewers of the original PR will also be added to the backport PRs
     required: false
     default: false
+  only_run_on_merged_prs:
+    description: Boolean, if set to true the action will only run on merged PRs
+    required: false
+    default: false
 runs:
   using: 'node20'
   main: 'dist/index.js'
