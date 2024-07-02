@@ -12,41 +12,41 @@ const hasAutoBackportLabel = (labels, prefix) => {
 
 // Retrieve inputs
 const autoBackportLabelPrefix = core.getInput('auto_backport_label_prefix', { required: false });
+const onlyRunOnMergedPrs = core.getBooleanInput('only_run_on_merged_prs', { required: false });
 const prLabels = context.payload.pull_request ? context.payload.pull_request.labels : [];
 
-// Check if the PR is merged
-if (context.payload.pull_request && context.payload.pull_request.merged) {
-  if (autoBackportLabelPrefix && !hasAutoBackportLabel(prLabels, autoBackportLabelPrefix)) {
-    core.info(`Pull request does not contain the label with prefix "${autoBackportLabelPrefix}". Action will not run.`);
-  } else {
-    run({
-      context,
-      inputs: {
-        accessToken: core.getInput('github_token', {
-          required: true,
-        }),
-        autoBackportLabelPrefix,
-        repoForkOwner: core.getInput('repo_fork_owner', {
-          required: false,
-        }),
-        addOriginalReviewers: core.getBooleanInput('add_original_reviewers', {
-          required: false,
-        }),
-      },
-    })
-      .then((res) => {
-        core.info(`Backport success: ${res.status}`);
-        core.setOutput('Result', res);
-        const failureMessage = getFailureMessage(res);
-        if (failureMessage) {
-          core.setFailed(failureMessage);
-        }
-      })
-      .catch((error) => {
-        core.error(`Backport failure: ${error.message}`);
-        core.setFailed(error.message);
-      });
-  }
-} else {
+// Check if the PR is merged if the only_run_on_merged_prs is true
+const isPrMerged = context.payload.pull_request && context.payload.pull_request.merged;
+if (onlyRunOnMergedPrs && !isPrMerged) {
   core.info('Pull request is not merged. Action will not run.');
+} else if (autoBackportLabelPrefix && !hasAutoBackportLabel(prLabels, autoBackportLabelPrefix)) {
+  core.info(`Pull request does not contain the label with prefix "${autoBackportLabelPrefix}". Action will not run.`);
+} else {
+  run({
+    context,
+    inputs: {
+      accessToken: core.getInput('github_token', {
+        required: true,
+      }),
+      autoBackportLabelPrefix,
+      repoForkOwner: core.getInput('repo_fork_owner', {
+        required: false,
+      }),
+      addOriginalReviewers: core.getBooleanInput('add_original_reviewers', {
+        required: false,
+      }),
+    },
+  })
+    .then((res) => {
+      core.info(`Backport success: ${res.status}`);
+      core.setOutput('Result', res);
+      const failureMessage = getFailureMessage(res);
+      if (failureMessage) {
+        core.setFailed(failureMessage);
+      }
+    })
+    .catch((error) => {
+      core.error(`Backport failure: ${error.message}`);
+      core.setFailed(error.message);
+    });
 }
