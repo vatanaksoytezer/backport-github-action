@@ -38,7 +38,7 @@ if (onlyRunOnMergedPrs && !isPrMerged) {
     },
   })
     .then((res) => {
-      core.info(`Backport success: ${res.status}`);
+      core.info(`Backport result: ${res.status}`);
       core.setOutput('Result', res);
       const failureMessage = getFailureMessage(res);
       if (failureMessage) {
@@ -46,7 +46,7 @@ if (onlyRunOnMergedPrs && !isPrMerged) {
       }
     })
     .catch((error) => {
-      core.error(`Backport failure: ${error.message}`);
+      core.error(`Backport unable to be completed: ${error.message}`);
       core.setFailed(error.message);
     });
 }
