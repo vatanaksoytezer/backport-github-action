@@ -11,16 +11,12 @@ const hasAutoBackportLabel = (labels, prefix) => {
 };
 
 // Retrieve inputs
-const autoBackportLabelPrefix = core.getInput('auto_backport_label_prefix', { required: false });
 const onlyRunOnMergedPrs = core.getBooleanInput('only_run_on_merged_prs', { required: false });
-const prLabels = context.payload.pull_request ? context.payload.pull_request.labels : [];
 
 // Check if the PR is merged if the only_run_on_merged_prs is true
 const isPrMerged = context.payload.pull_request && context.payload.pull_request.merged;
 if (onlyRunOnMergedPrs && !isPrMerged) {
   core.info('Pull request is not merged. Action will not run.');
-} else if (autoBackportLabelPrefix && !hasAutoBackportLabel(prLabels, autoBackportLabelPrefix)) {
-  core.info(`Pull request does not contain the label with prefix "${autoBackportLabelPrefix}". Action will not run.`);
 } else {
   run({
     context,
@@ -28,7 +24,9 @@ if (onlyRunOnMergedPrs && !isPrMerged) {
       accessToken: core.getInput('github_token', {
         required: true,
       }),
-      autoBackportLabelPrefix,
+      autoBackportLabelPrefix: core.getInput('auto_backport_label_prefix', {
+        required: false,
+      }),
       repoForkOwner: core.getInput('repo_fork_owner', {
         required: false,
       }),
@@ -42,7 +40,13 @@ if (onlyRunOnMergedPrs && !isPrMerged) {
       core.setOutput('Result', res);
       const failureMessage = getFailureMessage(res);
       if (failureMessage) {
-        core.setFailed(failureMessage);
+        // if the failure message includes "There are no branches" then we don't want to fail the action
+        if (failureMessage.includes('There are no branches')) {
+          core.warning(failureMessage);
+        }
+        else {
+          core.setFailed(failureMessage);
+        }
       }
     })
     .catch((error) => {
